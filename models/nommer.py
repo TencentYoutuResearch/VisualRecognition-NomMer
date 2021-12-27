@@ -278,7 +278,7 @@ def gumbel_softmax(logits, tau=1, hard=False):
     y_hard = (y_hard - y).detach() + y
     return y_hard
 
-class HybirdAttention(nn.Module):
+class HybridAttention(nn.Module):
     def __init__(self, dim, heads = 8, dropout = 0., depth=0, wsize=-1, psize=-1, cnn_expansion=4):
         super().__init__()
         self.depth = depth
@@ -313,8 +313,8 @@ class HybirdAttention(nn.Module):
         
         x3 = self.attentionG(x.permute(0,3,1,2)).permute(0,2,3,1)
 
-        hybird_x = x1 + x2 + x3
-        logits = self.fc(hybird_x)
+        hybrid_x = x1 + x2 + x3
+        logits = self.fc(hybrid_x)
 
         if self.training:
             logits = gumbel_softmax(logits, tau=1, hard=False)
@@ -338,7 +338,7 @@ class HybridNet(nn.Module):
         self.layers = nn.ModuleList([])
         for n in range(depth):
             self.layers.append(nn.ModuleList([
-                PreNorm(dim, HybirdAttention(dim, heads = heads, dropout = dropout, depth=n, wsize=wsize, psize=psize, cnn_expansion=cnn_expansion)),
+                PreNorm(dim, HybridAttention(dim, heads = heads, dropout = dropout, depth=n, wsize=wsize, psize=psize, cnn_expansion=cnn_expansion)),
                 PreNorm(dim, FeedForward(dim, mlp_dim, dropout = dropout)),
                 DropPath(drop_path[n])
             ]))
