@@ -1,0 +1,10 @@
+MODEL:
+  TYPE: nommer_attn
+  NAME: nommer_tiny_attn_224
+  DROP_PATH_RATE: 0.1
+  NomMer:
+    EMBED_DIM: 96
+    DEPTHS: [  2, 2, 8, 2 ]
+    NUM_HEADS: [ 2, 2, 4, 8 ]
+    CNN_EXPANSION: [2, 2]
+
