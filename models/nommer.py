@@ -330,7 +330,7 @@ class HybirdAttention(nn.Module):
         return x
         
 
-class HybirdNet(nn.Module):
+class HybridNet(nn.Module):
     def __init__(self, dim, depth, heads, mlp_dim, wsize, psize, cnn_expansion, dropout = 0., drop_path=0.):
         super().__init__()
         self.dim = dim
@@ -370,7 +370,7 @@ class Transformer(nn.Module):
             x = x + drop(ff(x))
         return x
 
-class Merge_Block(nn.Module):
+class MergeBlock(nn.Module):
     def __init__(self, dim, dim_out, norm_layer=nn.LayerNorm):
         super().__init__()
         self.conv = nn.Conv2d(dim, dim_out, 3, 1, 1)
@@ -409,16 +409,16 @@ class NomMerAttn(nn.Module):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]
 
         self.fc1 = nn.Linear(emd_dim, emd_dim)
-        self.transformer1 = HybirdNet(emd_dim, depths[0], num_heads[0], emd_dim*2, win_size, pool_size[0], cnn_expansion[0], 0.0, dpr[0:sum(depths[:1])])
-        self.merge1 = Merge_Block(emd_dim, emd_dim*2)
+        self.transformer1 = HybridNet(emd_dim, depths[0], num_heads[0], emd_dim*2, win_size, pool_size[0], cnn_expansion[0], 0.0, dpr[0:sum(depths[:1])])
+        self.merge1 = MergeBlock(emd_dim, emd_dim*2)
 
         self.fc2 = nn.Linear(emd_dim*2, emd_dim*2)
-        self.transformer2 = HybirdNet(emd_dim*2, depths[1], num_heads[1], emd_dim*4, win_size, pool_size[1], cnn_expansion[1], 0.0, dpr[sum(depths[:1]):sum(depths[:2])])
-        self.merge2 = Merge_Block(emd_dim*2, emd_dim*4)
+        self.transformer2 = HybridNet(emd_dim*2, depths[1], num_heads[1], emd_dim*4, win_size, pool_size[1], cnn_expansion[1], 0.0, dpr[sum(depths[:1]):sum(depths[:2])])
+        self.merge2 = MergeBlock(emd_dim*2, emd_dim*4)
 
         self.fc3 = nn.Linear(emd_dim*4, emd_dim*4)
         self.transformer3 = Transformer(emd_dim*4, depths[2], num_heads[2], emd_dim*8, 0.0, dpr[sum(depths[:2]):sum(depths[:3])])
-        self.merge3 = Merge_Block(emd_dim*4, emd_dim*8)
+        self.merge3 = MergeBlock(emd_dim*4, emd_dim*8)
 
         self.transformer4 = Transformer(emd_dim*8, depths[3], num_heads[3], emd_dim*8, 0.0, dpr[sum(depths[:3]):])
 
