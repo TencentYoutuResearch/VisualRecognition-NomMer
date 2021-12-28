@@ -84,6 +84,7 @@ def main(config):
 
     optimizer = build_optimizer(config, model)
     if config.AMP_OPT_LEVEL != "O0":
+        # if you installed apex, set AMP_OPT_LEVEL ot O1 can reserve huge GPU memory  
         model, optimizer = amp.initialize(model, optimizer, opt_level=config.AMP_OPT_LEVEL)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[config.LOCAL_RANK], broadcast_buffers=False)
     model_without_ddp = model.module
@@ -93,13 +94,14 @@ def main(config):
     
     lr_scheduler = None
     if data_loader_train is None:
-        # for eval mode
+        # for eval mode 
         lr_scheduler = build_scheduler(config, optimizer, 1)
     else:
         lr_scheduler = build_scheduler(config, optimizer, len(data_loader_train))
 
     max_accuracy = 0.0
     if config.TRAIN.AUTO_RESUME and not config.MODEL.RESUME:
+        # auto load latest checkpoint
         resume_file = auto_resume_helper(config.OUTPUT)
         if resume_file:
             if config.MODEL.RESUME:
@@ -151,6 +153,7 @@ def train(config, model, model_without_ddp, data_loader_train, data_loader_val, 
                 # save for last epoch
                 save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger)
             elif epoch % config.SAVE_FREQ == 0:
+                # save checkpoint every {SAVE_FREQ} epochs
                 save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger)
             if config.SAVE_FREQ > 1 and epoch % config.SAVE_FREQ != 0:
                 # save the latest epoch's checkpoint
@@ -160,7 +163,7 @@ def train(config, model, model_without_ddp, data_loader_train, data_loader_val, 
         acc1, acc5, loss = validate(config, data_loader_val, model)
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.2f}%")
         if dist.get_rank() == 0 and acc1 > max_accuracy:
-            # save the best
+            # save the best checkpoint
             save_checkpoint(config, epoch, model_without_ddp, acc1, optimizer, \
                 lr_scheduler, logger, save_latest=False, save_best=True)
 
@@ -347,7 +350,8 @@ if __name__ == '__main__':
         linear_scaled_lr = linear_scaled_lr * config.TRAIN.ACCUMULATION_STEPS
         linear_scaled_warmup_lr = linear_scaled_warmup_lr * config.TRAIN.ACCUMULATION_STEPS
         linear_scaled_min_lr = linear_scaled_min_lr * config.TRAIN.ACCUMULATION_STEPS
-        
+
+    # update the LR settings
     config.defrost()
     config.TRAIN.BASE_LR = linear_scaled_lr
     config.TRAIN.WARMUP_LR = linear_scaled_warmup_lr
@@ -366,4 +370,5 @@ if __name__ == '__main__':
     # print config
     logger.info(config.dump())
 
+    # main func
     main(config)
