@@ -36,7 +36,8 @@ def load_checkpoint(config, model, optimizer, lr_scheduler, logger):
     logger.info(msg)
     max_accuracy = 0.0
 
-    if not config.LOAD_PARAM_ONLY and not config.EVAL_MODE and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
+    if not config.LOAD_PARAM_ONLY and not config.EVAL_MODE and 'optimizer' in checkpoint and \
+            'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
         optimizer.load_state_dict(checkpoint['optimizer'])
         lr_scheduler.load_state_dict(checkpoint['lr_scheduler']) 
         config.defrost()
@@ -53,7 +54,8 @@ def load_checkpoint(config, model, optimizer, lr_scheduler, logger):
     return max_accuracy
 
 
-def save_checkpoint(config, epoch, model, max_accuracy, optimizer, lr_scheduler, logger, save_latest=False, save_best=False):
+def save_checkpoint(config, epoch, model, max_accuracy, optimizer, lr_scheduler, \
+                        logger, save_latest=False, save_best=False):
     save_state = {'model': model.state_dict(),
                   'optimizer': optimizer.state_dict(),
                   'lr_scheduler': lr_scheduler.state_dict(),

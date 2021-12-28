@@ -118,9 +118,10 @@ def main(config):
         train(config, model, model_without_ddp, data_loader_train, data_loader_val, \
             optimizer, mixup_fn, lr_scheduler, max_accuracy)
 
-def train(config, model, model_without_ddp, data_loader_train, data_loader_val, optimizer, mixup_fn, lr_scheduler, max_accuracy):
-    logger.info("Start training")
+def train(config, model, model_without_ddp, data_loader_train, data_loader_val, \
+            optimizer, mixup_fn, lr_scheduler, max_accuracy):
 
+    logger.info("Start training")
     criterion = None
     if config.AUG.MIXUP > 0.:
         # smoothing is handled with mixup label transform

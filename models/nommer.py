@@ -186,7 +186,8 @@ def init_dct_kernel(in_ch, ksize=8, rsize=2):
     DCT_filters = [DCT_filter for i in range(0,in_ch)]
     DCT_filters = torch.cat(DCT_filters,0)
     
-    dct_conv = nn.Conv2d(in_ch, rsize**2*in_ch, kernel_size=(ksize, ksize), stride=ksize, padding=0, groups=in_ch, bias=False)
+    dct_conv = nn.Conv2d(in_ch, rsize**2*in_ch, kernel_size=(ksize, ksize), stride=ksize, \
+                            padding=0, groups=in_ch, bias=False)
     dct_conv.weight = torch.nn.Parameter(DCT_filters)
     dct_conv.weight.requires_grad = False
     dct_conv.requires_grad = False
@@ -210,7 +211,8 @@ def init_idct_kernel(out_ch, ksize=8, rsize=2):
     IDCT_filters = [IDCT_filter for i in range(0,out_ch)]
     IDCT_filters = torch.cat(IDCT_filters,0)
 
-    idct_conv = nn.Conv2d(rsize**2*out_ch, ksize**2*out_ch, kernel_size=(1,1), stride=1, padding=0, groups=out_ch, bias=False)
+    idct_conv = nn.Conv2d(rsize**2*out_ch, ksize**2*out_ch, kernel_size=(1,1), stride=1, \
+                            padding=0, groups=out_ch, bias=False)
     idct_conv.weight = torch.nn.Parameter(IDCT_filters)
     idct_conv.weight.requires_grad = False
     idct_conv.requires_grad = False
@@ -338,7 +340,8 @@ class HybridNet(nn.Module):
         self.layers = nn.ModuleList([])
         for n in range(depth):
             self.layers.append(nn.ModuleList([
-                PreNorm(dim, HybridAttention(dim, heads = heads, dropout = dropout, depth=n, wsize=wsize, psize=psize, cnn_expansion=cnn_expansion)),
+                PreNorm(dim, HybridAttention(dim, heads = heads, dropout = dropout, depth=n, \
+                                    wsize=wsize, psize=psize, cnn_expansion=cnn_expansion)),
                 PreNorm(dim, FeedForward(dim, mlp_dim, dropout = dropout)),
                 DropPath(drop_path[n])
             ]))
@@ -397,7 +400,8 @@ class MergeBlock(nn.Module):
 
 class NomMerAttn(nn.Module):
 
-    def __init__(self, emd_dim=128, depths=[2,2,16,2], num_heads=[2,4,8,16], input_size=224, win_size=7, pool_size=[8,4], cnn_expansion=[4,4], drop_path_rate=0.1, num_class=1000):
+    def __init__(self, emd_dim=128, depths=[2,2,16,2], num_heads=[2,4,8,16], input_size=224, win_size=7, \
+                    pool_size=[8,4], cnn_expansion=[4,4], drop_path_rate=0.1, num_class=1000):
         super().__init__()
 
         self.cnn1 = nn.Conv2d(3, emd_dim, kernel_size=4, stride=4, padding=0, bias=False)
@@ -409,18 +413,22 @@ class NomMerAttn(nn.Module):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]
 
         self.fc1 = nn.Linear(emd_dim, emd_dim)
-        self.transformer1 = HybridNet(emd_dim, depths[0], num_heads[0], emd_dim*2, win_size, pool_size[0], cnn_expansion[0], 0.0, dpr[0:sum(depths[:1])])
+        self.transformer1 = HybridNet(emd_dim, depths[0], num_heads[0], emd_dim*2, win_size, pool_size[0], \
+                cnn_expansion[0], 0.0, dpr[0:sum(depths[:1])])
         self.merge1 = MergeBlock(emd_dim, emd_dim*2)
 
         self.fc2 = nn.Linear(emd_dim*2, emd_dim*2)
-        self.transformer2 = HybridNet(emd_dim*2, depths[1], num_heads[1], emd_dim*4, win_size, pool_size[1], cnn_expansion[1], 0.0, dpr[sum(depths[:1]):sum(depths[:2])])
+        self.transformer2 = HybridNet(emd_dim*2, depths[1], num_heads[1], emd_dim*4, win_size, pool_size[1], \
+                cnn_expansion[1], 0.0, dpr[sum(depths[:1]):sum(depths[:2])])
         self.merge2 = MergeBlock(emd_dim*2, emd_dim*4)
 
         self.fc3 = nn.Linear(emd_dim*4, emd_dim*4)
-        self.transformer3 = Transformer(emd_dim*4, depths[2], num_heads[2], emd_dim*8, 0.0, dpr[sum(depths[:2]):sum(depths[:3])])
+        self.transformer3 = Transformer(emd_dim*4, depths[2], num_heads[2], emd_dim*8, \
+                0.0, dpr[sum(depths[:2]):sum(depths[:3])])
         self.merge3 = MergeBlock(emd_dim*4, emd_dim*8)
 
-        self.transformer4 = Transformer(emd_dim*8, depths[3], num_heads[3], emd_dim*8, 0.0, dpr[sum(depths[:3]):])
+        self.transformer4 = Transformer(emd_dim*8, depths[3], num_heads[3], emd_dim*8, \
+                0.0, dpr[sum(depths[:3]):])
 
         self.num_class = num_class
         self.mlp_head = nn.Sequential(
