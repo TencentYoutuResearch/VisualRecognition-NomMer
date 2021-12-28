@@ -1,11 +1,14 @@
-# --------------------------------------------------------
-# NomMer Transformer
-# Created by Clark
-# 2021/12/27.
-# --------------------------------------------------------
+# -*- encoding: utf-8 -*-
+# ----------------------------------------------
+# filename        :samplers.py
+# description     :NomMer: Nominate Synergistic Context in Vision Transformer for Visual Recognition
+# date            :2021/12/28 17:45:58
+# author          :clark
+# version number  :1.0
+# ----------------------------------------------
+
 
 import torch
-
 
 class SubsetRandomSampler(torch.utils.data.Sampler):
     r"""Samples elements randomly from a given list of indices, without replacement.

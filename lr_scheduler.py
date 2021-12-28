@@ -1,8 +1,12 @@
-# --------------------------------------------------------
-# NomMer Transformer
-# Created by Clark
-# 2021/12/27.
-# --------------------------------------------------------
+# -*- encoding: utf-8 -*-
+# ----------------------------------------------
+# filename        :lr_scheduler.py
+# description     :NomMer: Nominate Synergistic Context in Vision Transformer for Visual Recognition
+# date            :2021/12/28 17:43:21
+# author          :clark
+# version number  :1.0
+# ----------------------------------------------
+
 
 import torch
 from timm.scheduler.cosine_lr import CosineLRScheduler

@@ -5,7 +5,7 @@ by Hao Liu, Xinghua Jiang, Xin Li, Zhimin Bao, Deqiang Jiang and Bo Ren.
 
 ## Introduction
 
-![focal-transformer-teaser](figures/nommer.png)
+![NomMer-transformer](figures/nommer.png)
 
 We propose a novel ViT architecture, termed NomMer, which can dynamically Nominate the synergistic global-local context in vision transforMer.
 

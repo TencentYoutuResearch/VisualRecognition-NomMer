@@ -1,8 +1,12 @@
-# --------------------------------------------------------
-# NomMer Transformer
-# Created by Clark
-# 2021/12/27.
-# --------------------------------------------------------
+# -*- encoding: utf-8 -*-
+# ----------------------------------------------
+# filename        :config.py
+# description     :NomMer: Nominate Synergistic Context in Vision Transformer for Visual Recognition
+# date            :2021/12/28 17:44:57
+# author          :clark
+# version number  :1.0
+# ----------------------------------------------
+
 
 import os
 import yaml

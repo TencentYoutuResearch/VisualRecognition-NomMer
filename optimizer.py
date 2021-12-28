@@ -1,11 +1,14 @@
-# --------------------------------------------------------
-# NomMer Transformer
-# Created by Clark
-# 2021/12/27.
-# --------------------------------------------------------
+# -*- encoding: utf-8 -*-
+# ----------------------------------------------
+# filename        :optimizer.py
+# description     :NomMer: Nominate Synergistic Context in Vision Transformer for Visual Recognition
+# date            :2021/12/28 17:44:27
+# author          :clark
+# version number  :1.0
+# ----------------------------------------------
+
 
 from torch import optim as optim
-
 
 def build_optimizer(config, model):
     """
