@@ -187,41 +187,32 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
 
         if config.TRAIN.ACCUMULATION_STEPS > 1:
             loss = loss / config.TRAIN.ACCUMULATION_STEPS
-            if config.AMP_OPT_LEVEL != "O0":
-                with amp.scale_loss(loss, optimizer) as scaled_loss:
-                    scaled_loss.backward()
-                if config.TRAIN.CLIP_GRAD:
-                    grad_norm = torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), config.TRAIN.CLIP_GRAD)
-                else:
-                    grad_norm = get_grad_norm(amp.master_params(optimizer))
-            else:
-                loss.backward()
-                if config.TRAIN.CLIP_GRAD:
-                    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config.TRAIN.CLIP_GRAD)
-                else:
-                    grad_norm = get_grad_norm(model.parameters())
-            if (idx + 1) % config.TRAIN.ACCUMULATION_STEPS == 0:
-                optimizer.step()
-                optimizer.zero_grad()
-                lr_scheduler.step_update(epoch * num_steps + idx)
         else:
-            #loss = criterion(outputs, targets)
             optimizer.zero_grad()
-            if config.AMP_OPT_LEVEL != "O0":
-                with amp.scale_loss(loss, optimizer) as scaled_loss:
-                    scaled_loss.backward()
-                if config.TRAIN.CLIP_GRAD:
-                    grad_norm = torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), config.TRAIN.CLIP_GRAD)
-                else:
-                    grad_norm = get_grad_norm(amp.master_params(optimizer))
+
+        if config.AMP_OPT_LEVEL != "O0":
+            with amp.scale_loss(loss, optimizer) as scaled_loss:
+                scaled_loss.backward()
+            if config.TRAIN.CLIP_GRAD:
+                grad_norm = torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), config.TRAIN.CLIP_GRAD)
             else:
-                loss.backward()
-                if config.TRAIN.CLIP_GRAD:
-                    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config.TRAIN.CLIP_GRAD)
-                else:
-                    grad_norm = get_grad_norm(model.parameters())
+                grad_norm = get_grad_norm(amp.master_params(optimizer))
+        else:
+            loss.backward()
+            if config.TRAIN.CLIP_GRAD:
+                grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), config.TRAIN.CLIP_GRAD)
+            else:
+                grad_norm = get_grad_norm(model.parameters())
+
+        if config.TRAIN.ACCUMULATION_STEPS > 1 and (idx + 1) % config.TRAIN.ACCUMULATION_STEPS == 0:
+            optimizer.step()
+            optimizer.zero_grad()
+            lr_scheduler.step_update(epoch * num_steps + idx)
+            
+        if config.TRAIN.ACCUMULATION_STEPS <= 1:
             optimizer.step()
             lr_scheduler.step_update(epoch * num_steps + idx)
+            
         torch.cuda.synchronize()
 
         loss_meter.update(loss.item(), targets.size(0))
