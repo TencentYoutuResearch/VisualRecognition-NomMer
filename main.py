@@ -74,6 +74,7 @@ def parse_option():
     return args, config
 
 def main(config):
+    # only load val datasets on eval mode
     dataset_train, dataset_val, data_loader_train, data_loader_val, mixup_fn = build_loader(config)
 
     logger.info(f"Creating model:{config.MODEL.TYPE}/{config.MODEL.NAME}")
@@ -92,6 +93,7 @@ def main(config):
     
     lr_scheduler = None
     if data_loader_train is None:
+        # for eval mode
         lr_scheduler = build_scheduler(config, optimizer, 1)
     else:
         lr_scheduler = build_scheduler(config, optimizer, len(data_loader_train))
@@ -117,6 +119,7 @@ def main(config):
             return
 
     if config.THROUGHPUT_MODE:
+        # test throughput and return
         throughput(data_loader_val, model, logger)
         return
 
@@ -144,17 +147,20 @@ def train(config, model, model_without_ddp, data_loader_train, data_loader_val, 
         train_one_epoch(config, model, criterion, data_loader_train, \
             optimizer, epoch, mixup_fn, lr_scheduler)
         if dist.get_rank() == 0:
-            if epoch == (config.TRAIN.EPOCHS - 1):
+            if epoch == (config.TRAIN.EPOCHS - 1): 
+                # save for last epoch
                 save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger)
             elif epoch % config.SAVE_FREQ == 0:
                 save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger)
             if config.SAVE_FREQ > 1 and epoch % config.SAVE_FREQ != 0:
+                # save the latest epoch's checkpoint
                 save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, \
                     lr_scheduler, logger, save_latest=True)
 
         acc1, acc5, loss = validate(config, data_loader_val, model)
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.2f}%")
         if dist.get_rank() == 0 and acc1 > max_accuracy:
+            # save the best
             save_checkpoint(config, epoch, model_without_ddp, acc1, optimizer, \
                 lr_scheduler, logger, save_latest=False, save_best=True)
 
@@ -181,7 +187,6 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
     for idx, (samples, targets) in enumerate(data_loader):
         samples = samples.cuda(non_blocking=True)
         targets = targets.cuda(non_blocking=True)
-        gumbel_target = torch.ones([targets.shape[0], 3]).cuda(non_blocking=True)/3
 
         if mixup_fn is not None:
             samples, targets = mixup_fn(samples, targets)
@@ -190,6 +195,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
         loss = criterion(outputs, targets)
 
         if config.TRAIN.ACCUMULATION_STEPS > 1:
+            # average loss by ACCUMULATION_STEPS
             loss = loss / config.TRAIN.ACCUMULATION_STEPS
         else:
             optimizer.zero_grad()
@@ -240,6 +246,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
 
 @torch.no_grad()
 def validate(config, data_loader, model):
+    # use CrossEntropyLoss for eval mode
     criterion = torch.nn.CrossEntropyLoss()
     model.eval()
 
@@ -283,7 +290,6 @@ def validate(config, data_loader, model):
                 f'Acc@5 {acc5_meter.val:.3f} ({acc5_meter.avg:.3f})\t'
                 f'Mem {memory_used:.0f}MB')
 
-    #result_wf.close()
     logger.info(f' * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}')
     return acc1_meter.avg, acc5_meter.avg, loss_meter.avg
 
@@ -295,11 +301,13 @@ def throughput(data_loader, model, logger):
     for idx, (images, _) in enumerate(data_loader):
         images = images.cuda(non_blocking=True)
         batch_size = images.shape[0]
+        # run 50 times before test
         for i in range(50):
             model(images)
         torch.cuda.synchronize()
         logger.info(f"throughput averaged with 30 times")
         tic1 = time.time()
+        # test 30 times for average
         for i in range(30):
             model(images)
         torch.cuda.synchronize()
@@ -341,9 +349,9 @@ if __name__ == '__main__':
         linear_scaled_min_lr = linear_scaled_min_lr * config.TRAIN.ACCUMULATION_STEPS
         
     config.defrost()
-    config.TRAIN.BASE_LR = min(0.0015, linear_scaled_lr)
-    config.TRAIN.WARMUP_LR = min(0.0000015, linear_scaled_warmup_lr)
-    config.TRAIN.MIN_LR = min(0.000015, linear_scaled_min_lr)
+    config.TRAIN.BASE_LR = linear_scaled_lr
+    config.TRAIN.WARMUP_LR = linear_scaled_warmup_lr
+    config.TRAIN.MIN_LR = linear_scaled_min_lr
     config.freeze()
 
     os.makedirs(config.OUTPUT, exist_ok=True)

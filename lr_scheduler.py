@@ -15,6 +15,16 @@ from timm.scheduler.scheduler import Scheduler
 
 
 def build_scheduler(config, optimizer, n_iter_per_epoch):
+    """[build lr scheduler]
+
+    Args:
+        config ([]): []
+        optimizer ([torch.optim]): []
+        n_iter_per_epoch ([int]): []
+
+    Returns:
+        [timm.scheduler]: []
+    """
     num_steps = int(config.TRAIN.EPOCHS * n_iter_per_epoch)
     warmup_steps = int(config.TRAIN.WARMUP_EPOCHS * n_iter_per_epoch)
     decay_steps = int(config.TRAIN.LR_SCHEDULER.DECAY_EPOCHS * n_iter_per_epoch)
@@ -67,6 +77,21 @@ class LinearLRScheduler(Scheduler):
                  noise_seed=42,
                  initialize=True,
                  ) -> None:
+        """[crate linear LR Scheduler]
+
+        Args:
+            optimizer (torch.optim.Optimizer): []
+            t_initial (int): []
+            lr_min_rate (float): []
+            warmup_t (int, optional): []. Defaults to 0.
+            warmup_lr_init ([type], optional): []. Defaults to 0..
+            t_in_epochs (bool, optional): []. Defaults to True.
+            noise_range_t ([type], optional): []. Defaults to None.
+            noise_pct (float, optional): []. Defaults to 0.67.
+            noise_std (float, optional): []. Defaults to 1.0.
+            noise_seed (int, optional): []. Defaults to 42.
+            initialize (bool, optional): []. Defaults to True.
+        """
         super().__init__(
             optimizer, param_group_field="lr",
             noise_range_t=noise_range_t, noise_pct=noise_pct, noise_std=noise_std, noise_seed=noise_seed,

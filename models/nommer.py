@@ -40,7 +40,17 @@ class PreNorm(nn.Module):
         return self.fn(self.norm(x), **kwargs)
 
 class WindowAttention(nn.Module):
-  
+    r""" Window based multi-head self attention (W-MSA) module with relative position bias.
+
+    Args:
+        dim (int): Number of input channels.
+        window_size (tuple[int]): The height and width of the window.
+        num_heads (int): Number of attention heads.
+        qkv_bias (bool, optional):  If True, add a learnable bias to query, key, value. Default: True
+        qk_scale (float | None, optional): Override default qk scale of head_dim ** -0.5 if set
+        attn_drop (float, optional): Dropout ratio of attention weight. Default: 0.0
+        proj_drop (float, optional): Dropout ratio of output. Default: 0.0
+    """
     def __init__(self, dim, window_size, num_heads, qkv_bias=True, qk_scale=None, attn_drop=0., proj_drop=0.):
 
         super().__init__()
@@ -142,6 +152,12 @@ def conv1x1(in_planes, out_planes, stride=1):
     return nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride, bias=False)
 
 class Bottleneck(nn.Module):
+    # Bottleneck in torchvision places the stride for downsampling at 3x3 convolution(self.conv2)
+    # while original implementation places the stride at the first 1x1 convolution(self.conv1)
+    # according to "Deep residual learning for image recognition"https://arxiv.org/abs/1512.03385.
+    # This variant is also known as ResNet V1.5 and improves accuracy according to
+    # https://ngc.nvidia.com/catalog/model-scripts/nvidia:resnet_50_v1_5_for_pytorch.
+    
     def __init__(self, inplanes, planes, expansion=4, stride=1, groups=1,
                  base_width=64, dilation=1, norm_layer=None):
         super(Bottleneck, self).__init__()
@@ -177,6 +193,16 @@ class Bottleneck(nn.Module):
         return out
 
 def init_dct_kernel(in_ch, ksize=8, rsize=2):
+    """[init a conv2d kernel for dct]
+
+    Args:
+        in_ch ([int]): [input dims]
+        ksize (int, optional): [kernel size for dct]. Defaults to 8.
+        rsize (int, optional): [reserve size for dct kernel]. Defaults to 2.
+
+    Returns:
+        [nn.Conv2d]: []
+    """
     DCT_filter_n = np.zeros([ksize, ksize, 1, rsize**2])
     XX, YY = np.meshgrid(range(ksize), range(ksize))
     # DCT basis as filters
@@ -201,6 +227,16 @@ def init_dct_kernel(in_ch, ksize=8, rsize=2):
     return dct_conv
 
 def init_idct_kernel(out_ch, ksize=8, rsize=2):
+    """[init a conv2d kernel for idct]
+
+    Args:
+        out_ch ([int]): [output dims]
+        ksize (int, optional): [kernel size for idct]. Defaults to 8.
+        rsize (int, optional): [reserve size for idct kernel]. Defaults to 2.
+
+    Returns:
+        [nn.Conv2d]: []
+    """
     IDCT_filter_n = np.zeros([1, 1, rsize**2, ksize**2])
     # IDCT basis as filters
     C=np.ones(ksize)
@@ -271,6 +307,8 @@ def gumbel_softmax(logits, tau=1, hard=False):
     ST-gumple-softmax
     input: [*, n_class]
     return: flatten --> [*, n_class] an one-hot vector
+    from https://github.com/ericjang/gumbel-softmax
+    when we use torch.nn.functional.gumbel_softmax and set amp-opt-level==1, train failed(Gradient overflow always)
     """
     y = gumbel_softmax_sample(logits, tau)
     
@@ -288,6 +326,17 @@ def gumbel_softmax(logits, tau=1, hard=False):
 
 class HybridAttention(nn.Module):
     def __init__(self, dim, heads = 8, dropout = 0., depth=0, wsize=-1, psize=-1, cnn_expansion=4):
+        """[a hybrid attention that can dynamically Nominate the synergistic global-local context]
+
+        Args:
+            dim ([int]): []
+            heads (int, optional): []. Defaults to 8.
+            dropout ([float], optional): []. Defaults to 0..
+            depth (int, optional): []. Defaults to 0.
+            wsize (int, optional): []. Defaults to -1.
+            psize (int, optional): [used for dct-attention]. Defaults to -1.
+            cnn_expansion (int, optional): []. Defaults to 4.
+        """
         super().__init__()
         self.depth = depth
         self.wsize = wsize
@@ -408,6 +457,17 @@ class NomMerAttn(nn.Module):
 
     def __init__(self, emd_dim=128, depths=[2,2,16,2], num_heads=[2,4,8,16], input_size=224, win_size=7, \
                     pool_size=[8,4], cnn_expansion=[4,4], drop_path_rate=0.1, num_class=1000):
+        """
+        Args:
+            emd_dim (int, optional): []. Defaults to 128.
+            depths (list, optional): []. Defaults to [2,2,16,2].
+            num_heads (list, optional): []. Defaults to [2,4,8,16].
+            input_size (int, optional): []. Defaults to 224.
+            win_size (int, optional): []. Defaults to 7.
+            cnn_expansion (list, optional): []. Defaults to [4,4].
+            drop_path_rate (float, optional): []. Defaults to 0.1.
+            num_class (int, optional): []. Defaults to 1000.
+        """
         super().__init__()
 
         self.cnn1 = nn.Conv2d(3, emd_dim, kernel_size=4, stride=4, padding=0, bias=False)
