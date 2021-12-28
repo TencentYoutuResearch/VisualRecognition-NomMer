@@ -67,7 +67,6 @@ def parse_option():
 
     return args, config
 
-
 def main(config):
     dataset_train, dataset_val, data_loader_train, data_loader_val, mixup_fn = build_loader(config)
 
@@ -84,23 +83,12 @@ def main(config):
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"number of params: {n_parameters}")
-    if hasattr(model_without_ddp, 'flops'):
-        flops = model_without_ddp.flops()
-        logger.info(f"number of GFLOPs: {flops / 1e9}")
-
+    
+    lr_scheduler = None
     if data_loader_train is None:
         lr_scheduler = build_scheduler(config, optimizer, 1)
     else:
         lr_scheduler = build_scheduler(config, optimizer, len(data_loader_train))
-
-    if config.AUG.MIXUP > 0.:
-        # smoothing is handled with mixup label transform
-        criterion = SoftTargetCrossEntropy()
-    elif config.MODEL.LABEL_SMOOTHING > 0.:
-        criterion = LabelSmoothingCrossEntropy(smoothing=config.MODEL.LABEL_SMOOTHING)
-    else:
-        criterion = torch.nn.CrossEntropyLoss()
-    criterion_gumbel = torch.nn.MSELoss()
 
     max_accuracy = 0.0
     if config.TRAIN.AUTO_RESUME and not config.MODEL.RESUME:
@@ -126,25 +114,42 @@ def main(config):
         throughput(data_loader_val, model, logger)
         return
 
+    if data_loader_train is not None:
+        train(config, model, model_without_ddp, data_loader_train, data_loader_val, \
+            optimizer, mixup_fn, lr_scheduler, max_accuracy)
+
+def train(config, model, model_without_ddp, data_loader_train, data_loader_val, optimizer, mixup_fn, lr_scheduler, max_accuracy):
     logger.info("Start training")
+
+    criterion = None
+    if config.AUG.MIXUP > 0.:
+        # smoothing is handled with mixup label transform
+        criterion = SoftTargetCrossEntropy()
+    elif config.MODEL.LABEL_SMOOTHING > 0.:
+        criterion = LabelSmoothingCrossEntropy(smoothing=config.MODEL.LABEL_SMOOTHING)
+    else:
+        criterion = torch.nn.CrossEntropyLoss()
+
     start_time = time.time()
     for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
         data_loader_train.sampler.set_epoch(epoch)
 
-        train_one_epoch(config, model, criterion, criterion_gumbel, data_loader_train, optimizer, epoch, mixup_fn, lr_scheduler)
+        train_one_epoch(config, model, criterion, data_loader_train, \
+            optimizer, epoch, mixup_fn, lr_scheduler)
         if dist.get_rank() == 0:
             if epoch == (config.TRAIN.EPOCHS - 1):
                 save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger)
             elif epoch % config.SAVE_FREQ == 0:
                 save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger)
-
             if config.SAVE_FREQ > 1 and epoch % config.SAVE_FREQ != 0:
-                save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger, save_latest=True)
+                save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, \
+                    lr_scheduler, logger, save_latest=True)
 
         acc1, acc5, loss = validate(config, data_loader_val, model)
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.2f}%")
         if dist.get_rank() == 0 and acc1 > max_accuracy:
-            save_checkpoint(config, epoch, model_without_ddp, acc1, optimizer, lr_scheduler, logger, save_latest=False, save_best=True)
+            save_checkpoint(config, epoch, model_without_ddp, acc1, optimizer, \
+                lr_scheduler, logger, save_latest=False, save_best=True)
 
         max_accuracy = max(max_accuracy, acc1)
         logger.info(f'Max accuracy: {max_accuracy:.2f}%')
@@ -154,7 +159,7 @@ def main(config):
     logger.info('Training time {}'.format(total_time_str))
 
 
-def train_one_epoch(config, model, criterion, criterion_gumbel, data_loader, optimizer, epoch, mixup_fn, lr_scheduler):
+def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mixup_fn, lr_scheduler):
     model.train()
     optimizer.zero_grad()
 

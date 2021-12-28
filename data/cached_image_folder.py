@@ -133,7 +133,7 @@ class DatasetFolder(data.Dataset):
         for index in range(n_sample):
             if index % (n_sample // 10) == 0:
                 t = time.time() - start_time
-                print(f'global_rank {dist.get_rank()} cached {index}/{n_sample} takes {t:.2f}s per block, {self.cache_mode}')
+                print(f'global_rank {dist.get_rank()} cached {index}/{n_sample} takes {t:.2f}s/block')
                 start_time = time.time()
             path, target = self.samples[index]
             if self.cache_mode == "full":
