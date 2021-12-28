@@ -45,43 +45,6 @@ class ZipReader(object):
         return zip_path, folder_path
 
     @staticmethod
-    def list_folder(path):
-        zip_path, folder_path = ZipReader.split_zip_style_path(path)
-
-        zfile = ZipReader.get_zipfile(zip_path)
-        folder_list = []
-        for file_foler_name in zfile.namelist():
-            file_foler_name = str.strip(file_foler_name, '/')
-            if file_foler_name.startswith(folder_path) and \
-                    len(os.path.splitext(file_foler_name)[-1]) == 0 and \
-                    file_foler_name != folder_path:
-                if len(folder_path) == 0:
-                    folder_list.append(file_foler_name)
-                else:
-                    folder_list.append(file_foler_name[len(folder_path) + 1:])
-
-        return folder_list
-
-    @staticmethod
-    def list_files(path, extension=None):
-        if extension is None:
-            extension = ['.*']
-        zip_path, folder_path = ZipReader.split_zip_style_path(path)
-
-        zfile = ZipReader.get_zipfile(zip_path)
-        file_lists = []
-        for file_foler_name in zfile.namelist():
-            file_foler_name = str.strip(file_foler_name, '/')
-            if file_foler_name.startswith(folder_path) and \
-                    str.lower(os.path.splitext(file_foler_name)[-1]) in extension:
-                if len(folder_path) == 0:
-                    file_lists.append(file_foler_name)
-                else:
-                    file_lists.append(file_foler_name[len(folder_path) + 1:])
-
-        return file_lists
-
-    @staticmethod
     def read(path):
         zip_path, path_img = ZipReader.split_zip_style_path(path)
         zfile = ZipReader.get_zipfile(zip_path)

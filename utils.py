@@ -26,18 +26,17 @@ def load_checkpoint(config, model, optimizer, lr_scheduler, logger):
     if 'state_dict_ema' in checkpoint:
         msg = model.load_state_dict(checkpoint['state_dict_ema'], strict=False)
     else:
+        #when pretrain/finetune, delete some mismatch params, for example mlp_head
         for name, param in model.named_parameters():
             if name not in checkpoint['model']:
                 continue
             if param.shape != checkpoint['model'][name].shape:
-                #print(param.shape, checkpoint['model'][name].shape)
                 del checkpoint['model'][name]
                 logger.info('del mismatch param: ' + name)
         msg = model.load_state_dict(checkpoint['model'], strict=False)
-        
     logger.info(msg)
-    max_accuracy = 0.0
 
+    max_accuracy = 0.0
     if not config.LOAD_PARAM_ONLY and not config.EVAL_MODE and 'optimizer' in checkpoint and \
             'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
         optimizer.load_state_dict(checkpoint['optimizer'])
@@ -74,7 +73,6 @@ def save_checkpoint(config, epoch, model, max_accuracy, optimizer, lr_scheduler,
     else:
         save_path = os.path.join(config.OUTPUT, f'ckpt_epoch_{epoch}.pth')
 
-    logger.info(f"{save_path} saving......")
     torch.save(save_state, save_path)
     logger.info(f"{save_path} saved !!!")
 
@@ -91,7 +89,7 @@ def get_grad_norm(parameters, norm_type=2):
     total_norm = total_norm ** (1. / norm_type)
     return total_norm
 
-
+# when set auto_resume to True, auto resume by the latest checkpoint
 def auto_resume_helper(output_dir):
     checkpoints = os.listdir(output_dir)
     checkpoints = [ckpt for ckpt in checkpoints if ckpt.endswith('pth')]
