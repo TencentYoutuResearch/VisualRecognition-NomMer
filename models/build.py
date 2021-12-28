@@ -1,5 +1,7 @@
 # --------------------------------------------------------
 # NomMer Transformer
+# Created by clarkjiang
+# 2021/12/27.
 # --------------------------------------------------------
 
 from .nommer import NomMerAttn

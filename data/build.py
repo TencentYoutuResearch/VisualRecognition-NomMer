@@ -1,5 +1,7 @@
 # --------------------------------------------------------
 # NomMer Transformer
+# Created by clarkjiang
+# 2021/12/27.
 # --------------------------------------------------------
 
 import os
@@ -11,10 +13,8 @@ from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from timm.data import Mixup
 from timm.data import create_transform
 from timm.data.transforms import _pil_interp
-
 from .cached_image_folder import CachedImageFolder
 from .samplers import SubsetRandomSampler
-
 
 def build_loader(config):
     num_tasks = dist.get_world_size()
@@ -36,7 +36,8 @@ def build_loader(config):
         pin_memory=config.DATA.PIN_MEMORY,
         drop_last=False
     )
-    
+
+    #load valsets only when on eval mode
     if config.EVAL_MODE:
         return None, dataset_val, None, data_loader_val, None
 
@@ -46,6 +47,7 @@ def build_loader(config):
     print(f"local rank {config.LOCAL_RANK} / global rank {dist.get_rank()} successfully build train dataset")
     print('train dataset nums:', len(dataset_train))
 
+    # part: cache part data before training, and cache all data when one epoch finished
     if config.DATA.ZIP_MODE and config.DATA.CACHE_MODE == 'part':
         indices = np.arange(dist.get_rank(), len(dataset_train), dist.get_world_size())
         sampler_train = SubsetRandomSampler(indices)
@@ -75,7 +77,7 @@ def build_loader(config):
 
     return dataset_train, dataset_val, data_loader_train, data_loader_val, mixup_fn
 
-
+#only for imagenet datasets
 def build_dataset(is_train, config):
     transform = build_transform(is_train, config)
     if config.DATA.DATASET == 'imagenet':
