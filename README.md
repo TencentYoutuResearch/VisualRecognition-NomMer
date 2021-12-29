@@ -25,7 +25,7 @@ We propose a novel ViT architecture, termed NomMer, which can dynamically Nomina
 
 ### Evaluation
 
-To evaluate a pre-trained `NomMer Transformer` on ImageNet val, run:
+To evaluate a pre-trained `NomMer` on ImageNet val, run:
 
 ```bash
 python -m torch.distributed.launch --nproc_per_node <num-of-gpus-to-use> --master_port 12346 main.py --eval \
@@ -34,7 +34,7 @@ python -m torch.distributed.launch --nproc_per_node <num-of-gpus-to-use> --maste
 
 ### Training from scratch
 
-To train a `NomMer Transformer` on ImageNet from scratch, run:
+To train a `NomMer` on ImageNet from scratch, run:
 
 ```bash
 python -m torch.distributed.launch --nproc_per_node <num-of-gpus-to-use> --master_port 12346  main.py \ 
@@ -42,6 +42,13 @@ python -m torch.distributed.launch --nproc_per_node <num-of-gpus-to-use> --maste
 ```
 
 ## Citation
+
+    @article{liu2021nommer,
+        title={NomMer: Nominate Synergistic Context in Vision Transformer for Visual Recognition},
+        author={Liu, Hao and Jiang, Xinghua and Li, Xin and Bao, Zhimin and Jiang, Deqiang and Ren, Bo},
+        journal={arXiv preprint arXiv:2111.12994},
+        year={2021}
+    }
 
 ## Acknowledgement
 
