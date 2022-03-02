@@ -121,7 +121,6 @@ class Attention(nn.Module):
         self.heads = heads
         self.scale = dim_head ** -0.5
 
-        self.attend = nn.Softmax(dim = -1)
         self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
 
         self.to_out = nn.Sequential(
@@ -130,17 +129,14 @@ class Attention(nn.Module):
         ) if project_out else nn.Identity()
 
     def forward(self, x):
-        b, n, _, h = *x.shape, self.heads
-        qkv = self.to_qkv(x).chunk(3, dim = -1)
-        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), qkv)
-
-        dots = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
-        attn = self.attend(dots)
+        b, n, C, h = *x.shape, self.heads
+        qkv = self.to_qkv(x).reshape(b, n, 3, h, C // h).permute(2, 0, 3, 1, 4)
+        q, k, v = qkv[0], qkv[1], qkv[2]  
+        attn = (q @ k.transpose(-2, -1)) * self.scale
+        attn = attn.softmax(dim=-1)
+        x = (attn @ v).transpose(1, 2).reshape(b, n, C)
         
-        out = (attn @ v)
-        out = rearrange(out, 'b h n d -> b n (h d)')
-        
-        return self.to_out(out)
+        return self.to_out(x)
 
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""
@@ -478,17 +474,14 @@ class NomMerAttn(nn.Module):
         self.cls_token = nn.Parameter(torch.randn(1, 1, emd_dim*8))
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]
 
-        self.fc1 = nn.Linear(emd_dim, emd_dim)
         self.transformer1 = HybridNet(emd_dim, depths[0], num_heads[0], emd_dim*2, win_size, pool_size[0], \
                 cnn_expansion[0], 0.0, dpr[0:sum(depths[:1])])
         self.merge1 = MergeBlock(emd_dim, emd_dim*2)
 
-        self.fc2 = nn.Linear(emd_dim*2, emd_dim*2)
         self.transformer2 = HybridNet(emd_dim*2, depths[1], num_heads[1], emd_dim*4, win_size, pool_size[1], \
                 cnn_expansion[1], 0.0, dpr[sum(depths[:1]):sum(depths[:2])])
         self.merge2 = MergeBlock(emd_dim*2, emd_dim*4)
 
-        self.fc3 = nn.Linear(emd_dim*4, emd_dim*4)
         self.transformer3 = Transformer(emd_dim*4, depths[2], num_heads[2], emd_dim*8, \
                 0.0, dpr[sum(depths[:2]):sum(depths[:3])])
         self.merge3 = MergeBlock(emd_dim*4, emd_dim*8)
@@ -520,15 +513,12 @@ class NomMerAttn(nn.Module):
         x = x.permute(0,2,3,1)
         b, w, h, c = x.shape
         
-        x = self.fc1(x)
         x = self.transformer1(x)
         x = self.merge1(x)
        
-        x = self.fc2(x)
         x = self.transformer2(x)
         x = self.merge2(x)
 
-        x = self.fc3(x)
         x = x + self.pos_embedding
         x = torch.flatten(x, 1, 2)
         x = self.transformer3(x)

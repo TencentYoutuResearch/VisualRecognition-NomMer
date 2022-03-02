@@ -113,6 +113,11 @@ def main(config):
         else:
             logger.info(f'no checkpoint found in {config.OUTPUT}, ignoring auto resume')
 
+    if config.THROUGHPUT_MODE:
+        # test throughput and return
+        throughput(data_loader_val, model, logger)
+        return
+
     if config.MODEL.RESUME:
         max_accuracy = load_checkpoint(config, model_without_ddp, optimizer, lr_scheduler, logger)
         acc1, acc5, loss = validate(config, data_loader_val, model)
@@ -120,16 +125,11 @@ def main(config):
         if config.EVAL_MODE:
             return
 
-    if config.THROUGHPUT_MODE:
-        # test throughput and return
-        throughput(data_loader_val, model, logger)
-        return
-
     if data_loader_train is not None:
-        train(config, model, model_without_ddp, data_loader_train, data_loader_val, \
+        train(config, model, model_without_ddp, data_loader_train, data_loader_val, dataset_val, \
             optimizer, mixup_fn, lr_scheduler, max_accuracy)
 
-def train(config, model, model_without_ddp, data_loader_train, data_loader_val, \
+def train(config, model, model_without_ddp, data_loader_train, data_loader_val, dataset_val, \
             optimizer, mixup_fn, lr_scheduler, max_accuracy):
 
     logger.info("Start training")
@@ -305,16 +305,16 @@ def throughput(data_loader, model, logger):
         images = images.cuda(non_blocking=True)
         batch_size = images.shape[0]
         # run 50 times before test
+        logger.info(f"throughput pre running")
         for i in range(50):
             model(images)
         torch.cuda.synchronize()
         logger.info(f"throughput averaged with 30 times")
         tic1 = time.time()
-        # test 30 times for average
         for i in range(30):
             model(images)
-        torch.cuda.synchronize()
         tic2 = time.time()
+        torch.cuda.synchronize()
         logger.info(f"batch_size {batch_size} throughput {30 * batch_size / (tic2 - tic1)}")
         return
 
