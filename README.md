@@ -3,6 +3,8 @@
 This is the official implementation of our [NomMer: Nominate Synergistic Context in Vision Transformer for Visual Recognition](https://arxiv.org/pdf/2111.12994.pdf), 
 by Hao Liu, Xinghua Jiang, Xin Li, Zhimin Bao, Deqiang Jiang and Bo Ren.
 
+03/02/2022: NomMer got accepted by CVPR 2022
+
 ## Introduction
 
 ![NomMer-transformer](figures/nommer.png)
