@@ -370,7 +370,7 @@ class HybridAttention(nn.Module):
         logits = self.fc(hybrid_x)
 
         if self.training:
-            logits = gumbel_softmax(logits, tau=1, hard=False)
+            logits = gumbel_softmax(logits, tau=1, hard=True)
         else:
             _values, _indexes = torch.max(logits, -1)
             _values = _values.unsqueeze(-1)

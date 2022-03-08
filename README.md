@@ -16,11 +16,11 @@ We propose a novel ViT architecture, termed NomMer, which can dynamically Nomina
 
 ### Image Classification on [ImageNet-1K](https://www.image-net.org/)
 
-| Model | Pretrain | Resolution | acc@1 | #params | FLOPs | Checkpoint |
+| Model | Pretrain | Resolution | acc@1 | #params | FLOPs |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| NomMer-T | IN-1K | 224 | 82.6 | 22M | 5.4G | [download]() |
-| NomMer-S | IN-1K | 224 | 83.7 | 42M | 10.1G | [download]() |
-| NomMer-B | IN-1K | 224 | 84.5 | 73M | 17.6G | [download]() |
+| NomMer-T | IN-1K | 224 | 82.6 | 22M | 5.4G |
+| NomMer-S | IN-1K | 224 | 83.7 | 42M | 10.1G |
+| NomMer-B | IN-1K | 224 | 84.5 | 73M | 17.6G |
 
 
 ## Getting Started
@@ -30,8 +30,8 @@ We propose a novel ViT architecture, termed NomMer, which can dynamically Nomina
 To evaluate a pre-trained `NomMer` on ImageNet val, run:
 
 ```bash
-python -m torch.distributed.launch --nproc_per_node <num-of-gpus-to-use> --master_port 12346 main.py --eval \
---cfg <config-file> --batch-size <batch-size-per-gpu> --resume <checkpoint> --data-path <imagenet-path> 
+python -m torch.distributed.launch --nproc_per_node <num-of-gpus-to-use> --master_port 12345 main.py --eval \
+--cfg <config-file> --batch-size <batch-size-per-gpu> --resume <checkpoint> --data-path <imagenet-path>
 ```
 
 ### Training from scratch
@@ -39,8 +39,8 @@ python -m torch.distributed.launch --nproc_per_node <num-of-gpus-to-use> --maste
 To train a `NomMer` on ImageNet from scratch, run:
 
 ```bash
-python -m torch.distributed.launch --nproc_per_node <num-of-gpus-to-use> --master_port 12346  main.py \ 
---cfg <config-file> --data-path <imagenet-path> [--batch-size <batch-size-per-gpu> --output <output-directory>]
+python -m torch.distributed.launch --nproc_per_node <num-of-gpus-to-use> --master_port 12345 main.py \
+--cfg <config-file> --data-path <imagenet-path> --batch-size <batch-size-per-gpu> --output <output-directory>
 ```
 
 ## Citation
