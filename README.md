@@ -44,6 +44,7 @@ python -m torch.distributed.launch --nproc_per_node <num-of-gpus-to-use> --maste
 ```
 
 ## Citation
+If you find NomMer useful in your research, please consider citing:
 
     @article{liu2021nommer,
         title={NomMer: Nominate Synergistic Context in Vision Transformer for Visual Recognition},
