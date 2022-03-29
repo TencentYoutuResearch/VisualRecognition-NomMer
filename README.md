@@ -57,7 +57,3 @@ If you find NomMer useful in your research, please consider citing:
 
 Our codebase is built based on [Swin-Transformer](https://github.com/microsoft/Swin-Transformer). We thank the authors for the nicely organized code!
 
-## Contributing
-
-## Trademarks
-
