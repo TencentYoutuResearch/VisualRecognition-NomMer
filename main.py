@@ -8,7 +8,8 @@
 # ----------------------------------------------
 
 
-import os, shutil
+import os
+import shutil
 import time
 import argparse
 import datetime
