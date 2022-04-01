@@ -9,7 +9,6 @@
 
 
 import os
-import shutil
 import time
 import argparse
 import datetime
@@ -18,7 +17,6 @@ import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
-import torch.nn.functional as F
 from timm.loss import LabelSmoothingCrossEntropy, SoftTargetCrossEntropy
 from timm.utils import accuracy, AverageMeter
 
@@ -92,7 +90,7 @@ def parse_option():
 
     # distributed training
     parser.add_argument("--local_rank", type=int, required=True, help='local rank for DistributedDataParallel')
-    args, unparsed = parser.parse_known_args()
+    args, _ = parser.parse_known_args()
     config = get_config(args)
 
     return args, config
@@ -100,7 +98,7 @@ def parse_option():
 
 def main(config):
     # only load val datasets on eval mode
-    dataset_train, dataset_val, data_loader_train, data_loader_val, mixup_fn = build_loader(config)
+    _, dataset_val, data_loader_train, data_loader_val, mixup_fn = build_loader(config)
 
     logger.info(f"Creating model:{config.MODEL.TYPE}/{config.MODEL.NAME}")
     model = build_model(config)
@@ -145,7 +143,7 @@ def main(config):
 
     if config.MODEL.RESUME:
         max_accuracy = load_checkpoint(config, model_without_ddp, optimizer, lr_scheduler, logger)
-        acc1, acc5, loss = validate(config, data_loader_val, model)
+        acc1, _, _ = validate(config, data_loader_val, model)
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.1f}%")
         if config.EVAL_MODE:
             return
@@ -206,7 +204,7 @@ def train(
                     config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger, save_latest=True
                 )
 
-        acc1, acc5, loss = validate(config, data_loader_val, model)
+        acc1, _, _ = validate(config, data_loader_val, model)
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.2f}%")
         if dist.get_rank() == 0 and acc1 > max_accuracy:
             # save the best checkpoint
@@ -315,7 +313,6 @@ def validate(config, data_loader, model):
     acc1_meter = AverageMeter()
     acc5_meter = AverageMeter()
 
-    sum = 0
     end = time.time()
     for idx, (images, target) in enumerate(data_loader):
         images = images.cuda(non_blocking=True)
@@ -359,17 +356,17 @@ def validate(config, data_loader, model):
 def throughput(data_loader, model, logger):
     model.eval()
 
-    for idx, (images, _) in enumerate(data_loader):
+    for _, (images, _) in enumerate(data_loader):
         images = images.cuda(non_blocking=True)
         batch_size = images.shape[0]
         # run 50 times before test
         logger.info(f"throughput pre running")
-        for i in range(50):
+        for _ in range(50):
             model(images)
         torch.cuda.synchronize()
         logger.info(f"throughput averaged with 30 times")
         tic1 = time.time()
-        for i in range(30):
+        for _ in range(30):
             model(images)
         tic2 = time.time()
         torch.cuda.synchronize()
@@ -384,15 +381,15 @@ if __name__ == '__main__':
         assert amp is not None, "amp not installed!"
 
     if 'RANK' in os.environ and 'WORLD_SIZE' in os.environ:
-        rank = int(os.environ["RANK"])
-        world_size = int(os.environ['WORLD_SIZE'])
-        print(f"RANK and WORLD_SIZE in environ: {rank}/{world_size}")
+        RANK = int(os.environ["RANK"])
+        WORLD_SIZE = int(os.environ['WORLD_SIZE'])
+        print(f"RANK and WORLD_SIZE in environ: {RANK}/{WORLD_SIZE}")
     else:
-        rank = -1
-        world_size = -1
+        RANK = -1
+        WORLD_SIZE = -1
 
     torch.cuda.set_device(config.LOCAL_RANK)
-    torch.distributed.init_process_group(backend='nccl', init_method='env://', world_size=world_size, rank=rank)
+    torch.distributed.init_process_group(backend='nccl', init_method='env://', world_size=WORLD_SIZE, rank=RANK)
     torch.distributed.barrier()
 
     seed = config.SEED + dist.get_rank()

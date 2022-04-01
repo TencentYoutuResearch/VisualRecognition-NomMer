@@ -11,11 +11,11 @@
 import io
 import os
 import time
+import random
+
 import torch.distributed as dist
 import torch.utils.data as data
-import random
 from PIL import Image
-
 from .zipreader import is_zip_path, ZipReader
 
 

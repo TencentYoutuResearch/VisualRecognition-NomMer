@@ -12,10 +12,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch import einsum
-from einops import rearrange, repeat
-from einops.layers.torch import Rearrange
-import math
+from einops import repeat
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 
 
@@ -92,8 +89,8 @@ class WindowAttention(nn.Module):
             x: input features with shape of (num_windows*B, N, C)
             mask: (0/-inf) mask with shape of (num_windows, Wh*Ww, Wh*Ww) or None
         """
-        B_, N, C = x.shape
-        qkv = self.qkv(x).reshape(B_, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        B, N, C = x.shape
+        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
 
         q = q * self.scale
@@ -108,7 +105,7 @@ class WindowAttention(nn.Module):
         attn = self.softmax(attn)
         attn = self.attn_drop(attn)
 
-        x = (attn @ v).transpose(1, 2).reshape(B_, N, C)
+        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
         x = self.proj(x)
         x = self.proj_drop(x)
 
@@ -131,12 +128,12 @@ class Attention(nn.Module):
         self.to_out = nn.Sequential(nn.Linear(inner_dim, dim), nn.Dropout(dropout)) if project_out else nn.Identity()
 
     def forward(self, x):
-        b, n, C, h = *x.shape, self.heads
-        qkv = self.to_qkv(x).reshape(b, n, 3, h, C // h).permute(2, 0, 3, 1, 4)
+        b, n, channels, h = *x.shape, self.heads
+        qkv = self.to_qkv(x).reshape(b, n, 3, h, channels // h).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
         attn = (q @ k.transpose(-2, -1)) * self.scale
         attn = attn.softmax(dim=-1)
-        x = (attn @ v).transpose(1, 2).reshape(b, n, C)
+        x = (attn @ v).transpose(1, 2).reshape(b, n, channels)
 
         return self.to_out(x)
 
@@ -299,7 +296,7 @@ class DCTAttention(nn.Module):
         B, C, H, W = x.shape
 
         input_8x8 = self.dct_conv_8x8(x)
-        _, c, h, w = input_8x8.shape
+        _, _, h, w = input_8x8.shape
 
         x = self.dw(input_8x8)
         x = self.bn1(x)
