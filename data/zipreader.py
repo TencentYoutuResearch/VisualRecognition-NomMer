@@ -25,6 +25,7 @@ def is_zip_path(img_or_path):
 
 class ZipReader(object):
     """A class to read zipped files"""
+
     zip_bank = dict()
 
     def __init__(self):
@@ -43,8 +44,8 @@ class ZipReader(object):
         pos_at = path.index('@')
         assert pos_at != -1, "character '@' is not found from the given path '%s'" % path
 
-        zip_path = path[0: pos_at]
-        folder_path = path[pos_at + 1:]
+        zip_path = path[0:pos_at]
+        folder_path = path[pos_at + 1 :]
         folder_path = str.strip(folder_path, '/')
         return zip_path, folder_path
 

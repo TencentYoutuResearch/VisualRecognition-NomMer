@@ -24,15 +24,17 @@ def create_logger(output_dir, dist_rank=0, name=''):
 
     # create formatter
     fmt = '[%(asctime)s %(name)s] (%(filename)s %(lineno)d): %(levelname)s %(message)s'
-    color_fmt = colored('[%(asctime)s %(name)s]', 'green') + \
-                colored('(%(filename)s %(lineno)d)', 'yellow') + ': %(levelname)s %(message)s'
+    color_fmt = (
+        colored('[%(asctime)s %(name)s]', 'green')
+        + colored('(%(filename)s %(lineno)d)', 'yellow')
+        + ': %(levelname)s %(message)s'
+    )
 
     # create console handlers for master process
     if dist_rank == 0:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging.DEBUG)
-        console_handler.setFormatter(
-            logging.Formatter(fmt=color_fmt, datefmt='%Y-%m-%d %H:%M:%S'))
+        console_handler.setFormatter(logging.Formatter(fmt=color_fmt, datefmt='%Y-%m-%d %H:%M:%S'))
         logger.addHandler(console_handler)
 
     # create file handlers

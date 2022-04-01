@@ -177,9 +177,7 @@ def _update_config_from_file(config, cfg_file):
 
     for cfg in yaml_cfg.setdefault('BASE', ['']):
         if cfg:
-            _update_config_from_file(
-                config, os.path.join(os.path.dirname(cfg_file), cfg)
-            )
+            _update_config_from_file(config, os.path.join(os.path.dirname(cfg_file), cfg))
     print('=> merge config from {}'.format(cfg_file))
     config.merge_from_file(cfg_file)
     config.freeze()
@@ -219,7 +217,7 @@ def update_config(config, args):
         config.THROUGHPUT_MODE = True
     if args.load_param_only:
         config.LOAD_PARAM_ONLY = True
-    
+
     # set local rank for distributed training
     config.LOCAL_RANK = args.local_rank
 

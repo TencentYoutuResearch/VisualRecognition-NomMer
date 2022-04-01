@@ -36,9 +36,16 @@ try:
 except ImportError:
     amp = None
 
+
 def parse_option():
     parser = argparse.ArgumentParser('NomMer Transformer training and evaluation script', add_help=False)
-    parser.add_argument('--cfg', type=str, required=True, metavar="FILE", help='path to config file', )
+    parser.add_argument(
+        '--cfg',
+        type=str,
+        required=True,
+        metavar="FILE",
+        help='path to config file',
+    )
     parser.add_argument(
         "--opts",
         help="Modify config options by adding 'KEY VALUE' pairs. ",
@@ -50,18 +57,34 @@ def parse_option():
     parser.add_argument('--batch-size', type=int, help="batch size for single GPU")
     parser.add_argument('--data-path', type=str, help='path to dataset')
     parser.add_argument('--zip', action='store_true', help='use zipped dataset instead of folder dataset')
-    parser.add_argument('--cache-mode', type=str, default='part', choices=['no', 'full', 'part'],
-                        help='no: no cache, '
-                             'full: cache all data, '
-                             'part: sharding the dataset into nonoverlapping pieces and only cache one piece')
+    parser.add_argument(
+        '--cache-mode',
+        type=str,
+        default='part',
+        choices=['no', 'full', 'part'],
+        help='no: no cache, '
+        'full: cache all data, '
+        'part: sharding the dataset into nonoverlapping pieces and only cache one piece',
+    )
     parser.add_argument('--resume', help='resume from checkpoint')
     parser.add_argument('--accumulation-steps', type=int, help="gradient accumulation steps")
-    parser.add_argument('--use-checkpoint', action='store_true',
-                        help="whether to use gradient checkpointing to save memory")
-    parser.add_argument('--amp-opt-level', type=str, default='O0', choices=['O0', 'O1', 'O2'],
-                        help='mixed precision opt level, if O0, no amp is used')
-    parser.add_argument('--output', default='output', type=str, metavar='PATH',
-                        help='root of output folder, the full path is <output>/<model_name>/<tag> (default: output)')
+    parser.add_argument(
+        '--use-checkpoint', action='store_true', help="whether to use gradient checkpointing to save memory"
+    )
+    parser.add_argument(
+        '--amp-opt-level',
+        type=str,
+        default='O0',
+        choices=['O0', 'O1', 'O2'],
+        help='mixed precision opt level, if O0, no amp is used',
+    )
+    parser.add_argument(
+        '--output',
+        default='output',
+        type=str,
+        metavar='PATH',
+        help='root of output folder, the full path is <output>/<model_name>/<tag> (default: output)',
+    )
     parser.add_argument('--tag', help='tag of experiment')
     parser.add_argument('--eval', action='store_true', help='Perform evaluation only')
     parser.add_argument('--throughput', action='store_true', help='Test throughput only')
@@ -74,6 +97,7 @@ def parse_option():
 
     return args, config
 
+
 def main(config):
     # only load val datasets on eval mode
     dataset_train, dataset_val, data_loader_train, data_loader_val, mixup_fn = build_loader(config)
@@ -85,17 +109,17 @@ def main(config):
 
     optimizer = build_optimizer(config, model)
     if config.AMP_OPT_LEVEL != "O0":
-        # if you installed apex, set AMP_OPT_LEVEL ot O1 can reserve huge GPU memory  
+        # if you installed apex, set AMP_OPT_LEVEL ot O1 can reserve huge GPU memory
         model, optimizer = amp.initialize(model, optimizer, opt_level=config.AMP_OPT_LEVEL)
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[config.LOCAL_RANK], broadcast_buffers=False)
     model_without_ddp = model.module
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"number of params: {n_parameters}")
-    
+
     lr_scheduler = None
     if data_loader_train is None:
-        # for eval mode 
+        # for eval mode
         lr_scheduler = build_scheduler(config, optimizer, 1)
     else:
         lr_scheduler = build_scheduler(config, optimizer, len(data_loader_train))
@@ -127,18 +151,39 @@ def main(config):
             return
 
     if data_loader_train is not None:
-        train(config, model, model_without_ddp, data_loader_train, data_loader_val, dataset_val, \
-            optimizer, mixup_fn, lr_scheduler, max_accuracy)
+        train(
+            config,
+            model,
+            model_without_ddp,
+            data_loader_train,
+            data_loader_val,
+            dataset_val,
+            optimizer,
+            mixup_fn,
+            lr_scheduler,
+            max_accuracy,
+        )
 
-def train(config, model, model_without_ddp, data_loader_train, data_loader_val, dataset_val, \
-            optimizer, mixup_fn, lr_scheduler, max_accuracy):
+
+def train(
+    config,
+    model,
+    model_without_ddp,
+    data_loader_train,
+    data_loader_val,
+    dataset_val,
+    optimizer,
+    mixup_fn,
+    lr_scheduler,
+    max_accuracy,
+):
 
     logger.info("Start training")
     criterion = None
-    if config.AUG.MIXUP > 0.:
+    if config.AUG.MIXUP > 0.0:
         # smoothing is handled with mixup label transform
         criterion = SoftTargetCrossEntropy()
-    elif config.MODEL.LABEL_SMOOTHING > 0.:
+    elif config.MODEL.LABEL_SMOOTHING > 0.0:
         criterion = LabelSmoothingCrossEntropy(smoothing=config.MODEL.LABEL_SMOOTHING)
     else:
         criterion = torch.nn.CrossEntropyLoss()
@@ -147,10 +192,9 @@ def train(config, model, model_without_ddp, data_loader_train, data_loader_val, 
     for epoch in range(config.TRAIN.START_EPOCH, config.TRAIN.EPOCHS):
         data_loader_train.sampler.set_epoch(epoch)
 
-        train_one_epoch(config, model, criterion, data_loader_train, \
-            optimizer, epoch, mixup_fn, lr_scheduler)
+        train_one_epoch(config, model, criterion, data_loader_train, optimizer, epoch, mixup_fn, lr_scheduler)
         if dist.get_rank() == 0:
-            if epoch == (config.TRAIN.EPOCHS - 1): 
+            if epoch == (config.TRAIN.EPOCHS - 1):
                 # save for last epoch
                 save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger)
             elif epoch % config.SAVE_FREQ == 0:
@@ -158,15 +202,25 @@ def train(config, model, model_without_ddp, data_loader_train, data_loader_val, 
                 save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger)
             if config.SAVE_FREQ > 1 and epoch % config.SAVE_FREQ != 0:
                 # save the latest epoch's checkpoint
-                save_checkpoint(config, epoch, model_without_ddp, max_accuracy, optimizer, \
-                    lr_scheduler, logger, save_latest=True)
+                save_checkpoint(
+                    config, epoch, model_without_ddp, max_accuracy, optimizer, lr_scheduler, logger, save_latest=True
+                )
 
         acc1, acc5, loss = validate(config, data_loader_val, model)
         logger.info(f"Accuracy of the network on the {len(dataset_val)} test images: {acc1:.2f}%")
         if dist.get_rank() == 0 and acc1 > max_accuracy:
             # save the best checkpoint
-            save_checkpoint(config, epoch, model_without_ddp, acc1, optimizer, \
-                lr_scheduler, logger, save_latest=False, save_best=True)
+            save_checkpoint(
+                config,
+                epoch,
+                model_without_ddp,
+                acc1,
+                optimizer,
+                lr_scheduler,
+                logger,
+                save_latest=False,
+                save_best=True,
+            )
 
         max_accuracy = max(max_accuracy, acc1)
         logger.info(f'Max accuracy: {max_accuracy:.2f}%')
@@ -187,14 +241,14 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
 
     start = time.time()
     end = time.time()
-    
+
     for idx, (samples, targets) in enumerate(data_loader):
         samples = samples.cuda(non_blocking=True)
         targets = targets.cuda(non_blocking=True)
 
         if mixup_fn is not None:
             samples, targets = mixup_fn(samples, targets)
-        
+
         outputs = model(samples)
         loss = criterion(outputs, targets)
 
@@ -222,11 +276,11 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
             optimizer.step()
             optimizer.zero_grad()
             lr_scheduler.step_update(epoch * num_steps + idx)
-            
+
         if config.TRAIN.ACCUMULATION_STEPS <= 1:
             optimizer.step()
             lr_scheduler.step_update(epoch * num_steps + idx)
-            
+
         torch.cuda.synchronize()
 
         loss_meter.update(loss.item(), targets.size(0))
@@ -244,9 +298,11 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
                 f'time {batch_time.val:.4f} ({batch_time.avg:.4f})\t'
                 f'loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
                 f'grad_norm {norm_meter.val:.4f} ({norm_meter.avg:.4f})\t'
-                f'mem {memory_used:.0f}MB')
+                f'mem {memory_used:.0f}MB'
+            )
     epoch_time = time.time() - start
     logger.info(f"EPOCH {epoch} training takes {datetime.timedelta(seconds=int(epoch_time))}")
+
 
 @torch.no_grad()
 def validate(config, data_loader, model):
@@ -267,7 +323,7 @@ def validate(config, data_loader, model):
 
         # compute output
         output = model(images)
-        
+
         # measure accuracy and record loss
         loss = criterion(output, target)
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
@@ -292,7 +348,8 @@ def validate(config, data_loader, model):
                 f'Loss {loss_meter.val:.4f} ({loss_meter.avg:.4f})\t'
                 f'Acc@1 {acc1_meter.val:.3f} ({acc1_meter.avg:.3f})\t'
                 f'Acc@5 {acc5_meter.val:.3f} ({acc5_meter.avg:.3f})\t'
-                f'Mem {memory_used:.0f}MB')
+                f'Mem {memory_used:.0f}MB'
+            )
 
     logger.info(f' * Acc@1 {acc1_meter.avg:.3f} Acc@5 {acc5_meter.avg:.3f}')
     return acc1_meter.avg, acc5_meter.avg, loss_meter.avg
@@ -318,6 +375,7 @@ def throughput(data_loader, model, logger):
         torch.cuda.synchronize()
         logger.info(f"batch_size {batch_size} throughput {30 * batch_size / (tic2 - tic1)}")
         return
+
 
 if __name__ == '__main__':
     _, config = parse_option()

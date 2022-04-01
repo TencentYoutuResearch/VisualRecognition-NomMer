@@ -22,15 +22,14 @@ except ImportError:
 def load_checkpoint(config, model, optimizer, lr_scheduler, logger):
     logger.info(f"==============> Resuming form {config.MODEL.RESUME}....................")
     if config.MODEL.RESUME.startswith('https'):
-        checkpoint = torch.hub.load_state_dict_from_url(
-            config.MODEL.RESUME, map_location='cpu', check_hash=True)
+        checkpoint = torch.hub.load_state_dict_from_url(config.MODEL.RESUME, map_location='cpu', check_hash=True)
     else:
         checkpoint = torch.load(config.MODEL.RESUME, map_location='cpu')
 
     if 'state_dict_ema' in checkpoint:
         msg = model.load_state_dict(checkpoint['state_dict_ema'], strict=False)
     else:
-        #when pretrain/finetune, delete some mismatch params, for example mlp_head
+        # when pretrain/finetune, delete some mismatch params, for example mlp_head
         for name, param in model.named_parameters():
             if name not in checkpoint['model']:
                 continue
@@ -41,10 +40,15 @@ def load_checkpoint(config, model, optimizer, lr_scheduler, logger):
     logger.info(msg)
 
     max_accuracy = 0.0
-    if not config.LOAD_PARAM_ONLY and not config.EVAL_MODE and 'optimizer' in checkpoint and \
-            'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
+    if (
+        not config.LOAD_PARAM_ONLY
+        and not config.EVAL_MODE
+        and 'optimizer' in checkpoint
+        and 'lr_scheduler' in checkpoint
+        and 'epoch' in checkpoint
+    ):
         optimizer.load_state_dict(checkpoint['optimizer'])
-        lr_scheduler.load_state_dict(checkpoint['lr_scheduler']) 
+        lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
         config.defrost()
         config.TRAIN.START_EPOCH = checkpoint['epoch'] + 1
         config.freeze()
@@ -59,14 +63,17 @@ def load_checkpoint(config, model, optimizer, lr_scheduler, logger):
     return max_accuracy
 
 
-def save_checkpoint(config, epoch, model, max_accuracy, optimizer, lr_scheduler, \
-                        logger, save_latest=False, save_best=False):
-    save_state = {'model': model.state_dict(),
-                  'optimizer': optimizer.state_dict(),
-                  'lr_scheduler': lr_scheduler.state_dict(),
-                  'max_accuracy': max_accuracy,
-                  'epoch': epoch,
-                  'config': config}
+def save_checkpoint(
+    config, epoch, model, max_accuracy, optimizer, lr_scheduler, logger, save_latest=False, save_best=False
+):
+    save_state = {
+        'model': model.state_dict(),
+        'optimizer': optimizer.state_dict(),
+        'lr_scheduler': lr_scheduler.state_dict(),
+        'max_accuracy': max_accuracy,
+        'epoch': epoch,
+        'config': config,
+    }
     if config.AMP_OPT_LEVEL != "O0":
         save_state['amp'] = amp.state_dict()
 
@@ -90,8 +97,9 @@ def get_grad_norm(parameters, norm_type=2):
     for p in parameters:
         param_norm = p.grad.data.norm(norm_type)
         total_norm += param_norm.item() ** norm_type
-    total_norm = total_norm ** (1. / norm_type)
+    total_norm = total_norm ** (1.0 / norm_type)
     return total_norm
+
 
 # when set auto_resume to True, auto resume by the latest checkpoint
 def auto_resume_helper(output_dir):
