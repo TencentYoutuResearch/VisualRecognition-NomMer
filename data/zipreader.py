@@ -8,7 +8,6 @@
 # ----------------------------------------------
 
 
-import os
 import zipfile
 import io
 import numpy as np

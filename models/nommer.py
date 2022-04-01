@@ -293,7 +293,7 @@ class DCTAttention(nn.Module):
         self.idct_conv = nn.Sequential(init_idct_kernel(dim, ksize, reserve_kernel), nn.PixelShuffle(ksize))
 
     def forward(self, x):
-        B, C, H, W = x.shape
+        B, _, _, _ = x.shape
 
         input_8x8 = self.dct_conv_8x8(x)
         _, _, h, w = input_8x8.shape
@@ -578,7 +578,7 @@ class NomMerAttn(nn.Module):
         x = self.relu(x)
 
         x = x.permute(0, 2, 3, 1)
-        b, w, h, c = x.shape
+        b, _, _, _ = x.shape
 
         x = self.transformer1(x)
         x = self.merge1(x)
