@@ -112,6 +112,7 @@ def main(config):
     model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[config.LOCAL_RANK], broadcast_buffers=False)
     model_without_ddp = model.module
 
+    # print n_parameters of model
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     logger.info(f"number of params: {n_parameters}")
 
@@ -220,7 +221,7 @@ def train(
                 save_best=True,
             )
 
-        # record max accuracy in training
+        # record max accuracy while training
         max_accuracy = max(max_accuracy, acc1)
         logger.info(f'Max accuracy: {max_accuracy:.2f}%')
 
@@ -271,6 +272,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
             else:
                 grad_norm = get_grad_norm(model.parameters())
 
+        # for ACCUMULATION_STEPS > 1 
         if config.TRAIN.ACCUMULATION_STEPS > 1 and (idx + 1) % config.TRAIN.ACCUMULATION_STEPS == 0:
             optimizer.step()
             optimizer.zero_grad()
@@ -287,6 +289,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
         batch_time.update(time.time() - end)
         end = time.time()
 
+        # print logs while training
         if idx % config.PRINT_FREQ == 0:
             lr = optimizer.param_groups[0]['lr']
             memory_used = torch.cuda.max_memory_allocated() / (1024.0 * 1024.0)
@@ -365,6 +368,8 @@ def throughput(data_loader, model, logger):
         for _ in range(50):
             model(images)
         torch.cuda.synchronize()
+
+        # run 30 times for test
         logger.info(f"throughput averaged with 30 times")
         tic1 = time.time()
         for _ in range(30):
@@ -378,6 +383,7 @@ def throughput(data_loader, model, logger):
 if __name__ == '__main__':
     _, config = parse_option()
 
+    # check amp, AMP_OPT_LEVEL=01 is recommended 
     if config.AMP_OPT_LEVEL != "O0":
         assert amp is not None, "amp not installed!"
 
