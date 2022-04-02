@@ -272,7 +272,7 @@ def train_one_epoch(config, model, criterion, data_loader, optimizer, epoch, mix
             else:
                 grad_norm = get_grad_norm(model.parameters())
 
-        # for ACCUMULATION_STEPS > 1 
+        # for ACCUMULATION_STEPS > 1
         if config.TRAIN.ACCUMULATION_STEPS > 1 and (idx + 1) % config.TRAIN.ACCUMULATION_STEPS == 0:
             optimizer.step()
             optimizer.zero_grad()
@@ -383,7 +383,7 @@ def throughput(data_loader, model, logger):
 if __name__ == '__main__':
     _, config = parse_option()
 
-    # check amp, AMP_OPT_LEVEL=01 is recommended 
+    # check amp, AMP_OPT_LEVEL=01 is recommended
     if config.AMP_OPT_LEVEL != "O0":
         assert amp is not None, "amp not installed!"
 
