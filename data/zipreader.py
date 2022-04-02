@@ -13,6 +13,7 @@ import io
 import numpy as np
 from PIL import Image
 from PIL import ImageFile
+from PIL import UnidentifiedImageError
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -60,11 +61,12 @@ class ZipReader(object):
         zip_path, path_img = ZipReader.split_zip_style_path(path)
         zfile = ZipReader.get_zipfile(zip_path)
         data = zfile.read(path_img)
+        data = data[10:]
         try:
             im = Image.open(io.BytesIO(data))
-        except Exception as ex:
-            print(ex)
+        except UnidentifiedImageError:
             print("ERROR IMG LOADED: ", path_img)
             random_img = np.random.rand(224, 224, 3) * 255
             im = Image.fromarray(np.uint8(random_img))
+
         return im
