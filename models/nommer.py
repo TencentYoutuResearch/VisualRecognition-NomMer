@@ -378,7 +378,7 @@ class HybridAttention(nn.Module):
         return x
 
     def forward(self, x):
-        B, H, W, C = x.shape
+        _, H, W, _ = x.shape
 
         x1 = self.cnn(x.permute(0, 3, 1, 2))
         x1 = x1.permute(0, 2, 3, 1)
@@ -496,12 +496,12 @@ class NomMerAttn(nn.Module):
     def __init__(
         self,
         emd_dim=128,
-        depths=[],
-        num_heads=[],
+        depths=None,
+        num_heads=None,
         input_size=224,
         win_size=7,
-        pool_size=[],
-        cnn_expansion=[],
+        pool_size=None,
+        cnn_expansion=None,
         drop_path_rate=0.1,
         num_class=1000,
     ):

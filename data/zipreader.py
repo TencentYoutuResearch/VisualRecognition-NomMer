@@ -62,7 +62,8 @@ class ZipReader(object):
         data = zfile.read(path_img)
         try:
             im = Image.open(io.BytesIO(data))
-        except:
+        except Exception as ex:
+            print(ex)
             print("ERROR IMG LOADED: ", path_img)
             random_img = np.random.rand(224, 224, 3) * 255
             im = Image.fromarray(np.uint8(random_img))
