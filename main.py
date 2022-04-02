@@ -117,7 +117,7 @@ def main(config):
 
     lr_scheduler = None
     if data_loader_train is None:
-        # for eval mode
+        # for eval mode, do not load train datasets, so set length to 1
         lr_scheduler = build_scheduler(config, optimizer, 1)
     else:
         lr_scheduler = build_scheduler(config, optimizer, len(data_loader_train))
@@ -220,6 +220,7 @@ def train(
                 save_best=True,
             )
 
+        # record max accuracy in training
         max_accuracy = max(max_accuracy, acc1)
         logger.info(f'Max accuracy: {max_accuracy:.2f}%')
 
@@ -333,7 +334,7 @@ def validate(config, data_loader, model):
         acc1_meter.update(acc1.item(), target.size(0))
         acc5_meter.update(acc5.item(), target.size(0))
 
-        # measure elapsed time
+        # measure elapsed time for every batch
         batch_time.update(time.time() - end)
         end = time.time()
 
@@ -426,5 +427,5 @@ if __name__ == '__main__':
     # print config
     logger.info(config.dump())
 
-    # main func
+    # main func for train and eval
     main(config)
