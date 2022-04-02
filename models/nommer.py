@@ -496,12 +496,12 @@ class NomMerAttn(nn.Module):
     def __init__(
         self,
         emd_dim=128,
-        depths=[2, 2, 16, 2],
-        num_heads=[2, 4, 8, 16],
+        depths=[],
+        num_heads=[],
         input_size=224,
         win_size=7,
-        pool_size=[8, 4],
-        cnn_expansion=[4, 4],
+        pool_size=[],
+        cnn_expansion=[],
         drop_path_rate=0.1,
         num_class=1000,
     ):
