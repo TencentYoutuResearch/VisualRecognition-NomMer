@@ -1,0 +1,10 @@
+MODEL:
+  TYPE: nommer_attn
+  NAME: nommer_base_attn_224
+  DROP_PATH_RATE: 0.5
+  NomMer:
+    EMBED_DIM: 128
+    DEPTHS: [  6, 6, 16, 4 ]
+    NUM_HEADS: [ 2, 2, 4, 8 ]
+
+
