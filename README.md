@@ -7,7 +7,7 @@ by Hao Liu, Xinghua Jiang, Xin Li, Zhimin Bao, Deqiang Jiang and Bo Ren.
 
 ## Introduction
 
-<img src="./figures/nommer.png" width = "800" height = "785" alt="NomMer-transformer" align=center />
+<img src="./figures/nommer.png" width = "640" height = "628" alt="NomMer-transformer" align=center />
 
 We propose a novel ViT architecture, termed NomMer, which can dynamically Nominate the synergistic global-local context in vision transforMer.
 
