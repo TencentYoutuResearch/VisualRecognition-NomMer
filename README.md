@@ -17,7 +17,7 @@ We propose a novel ViT architecture, termed NomMer, which can dynamically Nomina
 ### Image Classification on [ImageNet-1K](https://www.image-net.org/)
 
 | Model | Pretrain | Resolution | acc@1 | #params | FLOPs |
-| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| :---: | :---: | :---: | :---: | :---: | :---: |
 | NomMer-T | IN-1K | 224 | 82.6 | 22M | 5.4G |
 | NomMer-S | IN-1K | 224 | 83.7 | 42M | 10.1G |
 | NomMer-B | IN-1K | 224 | 84.5 | 73M | 17.6G |
