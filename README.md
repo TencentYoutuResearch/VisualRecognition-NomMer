@@ -46,11 +46,13 @@ python -m torch.distributed.launch --nproc_per_node <num-of-gpus-to-use> --maste
 ## Citation
 If you find NomMer useful in your research, please consider citing:
 
-    @inproceedings{liu2022nommer,
-        title={NomMer: Nominate Synergistic Context in Vision Transformer for Visual Recognition},
-        author={Liu, Hao and Jiang, Xinghua and Li, Xin and Bao, Zhimin and Jiang, Deqiang and Ren, Bo},
-        booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
-        year={2022}
+    @InProceedings{Liu_2022_CVPR,
+        author    = {Liu, Hao and Jiang, Xinghua and Li, Xin and Bao, Zhimin and Jiang, Deqiang and Ren, Bo},
+        title     = {NomMer: Nominate Synergistic Context in Vision Transformer for Visual Recognition},
+        booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+        month     = {June},
+        year      = {2022},
+        pages     = {12073-12082}
     }
 
 ## Acknowledgement
